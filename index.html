@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weather Map · Watch the storm before it arrives</title>
+<meta name="description" content="Smooth radar from 24 hours back to 16 hours ahead, hurricanes, lightning, model comparison and airport weather for pilots. Free, private, on web, iPhone and TV.">
+<meta property="og:title" content="Weather Map · Watch the storm before it arrives">
+<meta property="og:description" content="TV quality radar, hurricanes, lightning, model comparison and airport weather for pilots. Free and private.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://boorussia.github.io/weather-map/apple-touch-icon.png">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#1f4fd8">
+<link rel="icon" href="https://boorussia.github.io/weather-map/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="https://boorussia.github.io/weather-map/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0a1433; --ink-2:#28345a; --muted:rgba(10,20,51,.62); --line:rgba(10,20,51,.1);
+  --paper:#f3f5fa; --white:#fff;
+  --cobalt:#1f4fd8; --cobalt-d:#0e2c9e; --sky:#5c8bf0; --pale:#b8cdfb; --mist:#e7eefe;
+  --sun:#ffd24a; --orange:#ff7a3d; --green:#2fd27a; --accent:#0a84ff;
+  --vfr:#2fd27a; --mvfr:#3d8bff; --ifr:#ff453a; --lifr:#d64bff;
+  --night:#0b1630; --night-2:#111e3d;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --mono:"DM Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--paper);-webkit-text-size-adjust:100%}
+html.lenis,html.lenis body{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto!important}
+.lenis.lenis-stopped{overflow:hidden}
+body{font-family:Manrope,system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+svg,canvas{display:block}
+::selection{background:var(--sun);color:var(--ink)}
+:focus-visible{outline:3px solid var(--sun);outline-offset:3px;border-radius:10px}
+h1,h2,h3{font-weight:600;letter-spacing:-.035em;text-wrap:balance}
+p{text-wrap:pretty}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.skip{position:fixed;left:16px;top:-60px;z-index:200;background:var(--sun);color:var(--ink);padding:8px 12px;border-radius:8px;font-weight:700;transition:top .3s var(--ease)}
+.skip:focus{top:16px}
+.tag{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 12px;border-radius:999px;background:var(--mist);color:var(--cobalt);font-family:var(--mono);font-size:12px;letter-spacing:.02em;text-transform:uppercase}
+.tag.light{background:rgba(255,255,255,.14);color:#fff}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.02em;white-space:nowrap}
+.chip.live{background:rgba(47,210,122,.16);color:#0f8a4a}
+.chip.live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.chip.next{background:rgba(255,210,74,.2);color:#8a6a00}
+.dark .chip.live,.free-r .chip.live{color:#7cf0b0}
+.dark .chip.next,.free-r .chip.next{color:var(--sun);background:rgba(255,210,74,.14)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 22px;border-radius:14px;font-weight:700;font-size:16px;white-space:nowrap;transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .3s}
+.btn.sun{background:var(--sun);color:var(--ink);box-shadow:0 4px 0 #c99a12,0 12px 24px -8px rgba(201,154,18,.6),inset 0 1px 0 rgba(255,255,255,.6)}
+.btn.sun:hover{transform:translateY(-2px);box-shadow:0 6px 0 #c99a12,0 18px 28px -10px rgba(201,154,18,.7),inset 0 1px 0 rgba(255,255,255,.6)}
+.btn.sun:active{transform:translateY(3px);box-shadow:0 1px 0 #c99a12,0 4px 10px -6px rgba(201,154,18,.6),inset 0 1px 0 rgba(255,255,255,.6)}
+.btn.ink{background:var(--ink);color:#fff;box-shadow:0 4px 0 #000,inset 0 1px 0 rgba(255,255,255,.15)}
+.btn.ink:hover{transform:translateY(-2px);box-shadow:0 6px 0 #000,inset 0 1px 0 rgba(255,255,255,.15)}
+.btn.ink:active{transform:translateY(3px);box-shadow:0 1px 0 #000}
+.btn.ghost{border:1px solid var(--line);background:var(--white)}
+.btn.ghost:hover{transform:translateY(-2px);background:var(--mist)}
+.btn.sm{height:40px;padding:0 16px;font-size:14px;border-radius:12px}
+.link{display:inline-flex;align-items:center;gap:8px;font-weight:600;padding:12px 4px;border-bottom:1px solid transparent;transition:border-color .3s;text-shadow:0 1px 12px rgba(8,24,90,.5)}
+.link:hover{border-color:currentColor}
+.link .arr{transition:transform .5s var(--ease)}
+.link:hover .arr{transform:translateY(3px)}
+
+/* nav */
+.nav{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:100;width:min(1192px,calc(100% - 32px));display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 8px 8px 12px;border-radius:18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#fff;backdrop-filter:blur(16px) saturate(150%);-webkit-backdrop-filter:blur(16px) saturate(150%);transition:background .5s var(--ease),color .5s var(--ease),border-color .5s}
+.nav.light{background:rgba(255,255,255,.72);border-color:var(--line);color:var(--ink)}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;letter-spacing:-.03em}
+.logo img{width:30px;height:30px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.nav-links{display:flex;gap:4px}
+.nav-links a{padding:8px 12px;border-radius:10px;font-size:14px;font-weight:600;opacity:.78;transition:opacity .3s,background .3s}
+.nav-links a:hover{opacity:1;background:rgba(255,255,255,.12)}
+.nav.light .nav-links a:hover{background:rgba(10,20,51,.05)}
+.nav-links a.active{opacity:1}
+.menu-btn{display:none;width:40px;height:40px;border-radius:12px;position:relative;background:rgba(255,255,255,.14)}
+.nav.light .menu-btn{background:rgba(10,20,51,.06)}
+.menu-btn i{position:absolute;left:12px;right:12px;height:2px;background:currentColor;border-radius:2px;transition:transform .5s var(--ease)}
+.menu-btn i:nth-child(1){top:15px}.menu-btn i:nth-child(2){top:23px}
+.menu-open .menu-btn i:nth-child(1){transform:translateY(4px) rotate(45deg)}
+.menu-open .menu-btn i:nth-child(2){transform:translateY(-4px) rotate(-45deg)}
+.mobile-menu{position:fixed;inset:0;z-index:90;background:rgba(14,44,158,.94);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);color:#fff;display:flex;flex-direction:column;justify-content:center;padding:96px 32px;gap:8px;opacity:0;pointer-events:none;transition:opacity .5s var(--ease)}
+.menu-open .mobile-menu{opacity:1;pointer-events:auto}
+.menu-open .nav{color:#fff;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22)}
+.mobile-menu a{font-size:40px;font-weight:600;letter-spacing:-.03em;opacity:0;transform:translateY(24px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
+.menu-open .mobile-menu a{opacity:1;transform:none}
+
+/* hero */
+.hero{position:relative;min-height:100svh;color:#fff;overflow:hidden;background:var(--cobalt);display:flex;align-items:center}
+.pix{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+.trail{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.glider{position:absolute;left:0;top:0;width:64px;height:40px;margin:-20px 0 0 -32px;pointer-events:none;filter:drop-shadow(0 10px 8px rgba(8,24,90,.35));will-change:transform;z-index:3}
+.hero-grid{position:relative;z-index:2;display:grid;grid-template-columns:1.15fr .95fr;gap:48px;align-items:center;width:100%;padding-top:120px;padding-bottom:96px}
+.hero h1{font-size:clamp(44px,5.4vw,78px);line-height:1;letter-spacing:-.045em;margin:24px 0;max-width:680px}
+.hero h1 span{display:block;background:linear-gradient(90deg,#fff,#c9d8ff);-webkit-background-clip:text;background-clip:text;color:transparent;opacity:0;transform:translateY(40px);transition:opacity 1.2s var(--ease),transform 1.2s var(--ease)}
+.hero h1 span:nth-child(2){transition-delay:.1s}
+.loaded .hero h1 span{opacity:1;transform:none}
+.hero .sub{font-size:18px;line-height:28px;color:rgba(255,255,255,.88);max-width:540px;margin-bottom:32px;text-shadow:0 1px 16px rgba(8,24,90,.45)}
+.cta-row{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.proof{display:inline-flex;align-items:center;gap:12px;margin-top:40px;padding:6px 16px 6px 6px;border-radius:999px;background:rgba(10,20,51,.32);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:14px;color:rgba(255,255,255,.9)}
+.proof .pl{display:flex;gap:4px}
+.proof .pl span{height:26px;padding:0 10px;border-radius:999px;background:rgba(255,255,255,.14);display:inline-flex;align-items:center;font-size:12px;font-weight:600}
+.fade{opacity:0;transform:translateY(24px);transition:opacity 1.2s var(--ease),transform 1.2s var(--ease);transition-delay:var(--d,0s)}
+.loaded .fade{opacity:1;transform:none}
+
+/* hero radar card */
+.fc{position:relative;padding:20px;border-radius:28px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);box-shadow:0 30px 60px -20px rgba(6,20,90,.5),inset 0 1px 0 rgba(255,255,255,.3)}
+.fc-top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px;padding:0 4px}
+.fc-top b{display:block;font-size:18px;letter-spacing:-.02em}
+.fc-top small{font-size:13px;color:rgba(255,255,255,.75)}
+.status{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:999px;background:rgba(10,20,51,.32);font-size:12px;font-weight:600;white-space:nowrap}
+.status i{width:9px;height:9px;border-radius:50%;background:var(--st,var(--green));box-shadow:0 0 0 3px rgba(255,255,255,.12),0 0 12px var(--st,var(--green));transition:background .4s,box-shadow .4s}
+.radar{position:relative;aspect-ratio:16/10;border-radius:18px;overflow:hidden;background:var(--night);border:1px solid rgba(255,255,255,.14);margin-bottom:12px}
+.radar canvas{position:absolute;inset:0;width:100%;height:100%}
+.radar .rx{image-rendering:pixelated;image-rendering:crisp-edges}
+.dot{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--accent);border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.dot::after{content:"";position:absolute;inset:-9px;border-radius:50%;border:2px solid var(--accent);opacity:0;animation:ring 2.4s var(--ease) infinite}
+@keyframes ring{0%{transform:scale(.4);opacity:.9}100%{transform:scale(1.8);opacity:0}}
+.radar .legend2{position:absolute;right:10px;bottom:10px;display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:rgba(0,0,0,.35);font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.75)}
+.radar .legend2 b{display:block;width:72px;height:6px;border-radius:6px;background:linear-gradient(90deg,#5ee38a,#1fae4c,#f5c400,#f58a00,#e8312a,#c51ec5)}
+.radar .stamp{position:absolute;left:10px;top:10px;padding:4px 8px;border-radius:999px;background:rgba(0,0,0,.35);font-family:var(--mono);font-size:11px;color:#fff}
+.fc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.fc-grid>div{padding:12px;border-radius:14px;background:rgba(10,20,51,.18);min-width:0}
+.fc-grid small{display:block;font-size:11px;color:rgba(255,255,255,.72);margin-bottom:2px}
+.fc-grid b{display:block;font-size:15px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slider{position:relative;height:52px;border-radius:14px;background:rgba(10,20,51,.18);cursor:grab;touch-action:none;outline-offset:2px}
+.slider:active{cursor:grabbing}
+.ticks{position:absolute;inset:0 16px;display:flex;justify-content:space-between;align-items:center}
+.ticks i{width:2px;height:12px;border-radius:2px;background:rgba(255,255,255,.4);transform:scaleY(var(--s,1));transition:background .3s}
+.ticks i.hot{background:#fff}
+.ticks i.now{background:var(--sun);height:18px}
+.handle{position:absolute;top:6px;bottom:6px;left:16px;width:4px;margin-left:-2px;border-radius:4px;background:var(--sun);box-shadow:0 0 0 4px rgba(255,210,74,.25);will-change:transform}
+.handle span{position:absolute;bottom:calc(100% + 14px);left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:12px;padding:4px 8px;border-radius:8px;background:var(--sun);color:var(--ink);white-space:nowrap}
+.handle span::after{content:"";position:absolute;left:50%;top:100%;margin-left:-4px;border:4px solid transparent;border-top-color:var(--sun)}
+.fc-axis{display:flex;justify-content:space-between;margin-top:8px;padding:0 8px;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.65)}
+.fc-hint{position:absolute;right:24px;top:calc(100% + 12px);font-size:13px;color:rgba(255,255,255,.8)}
+
+/* sources marquee */
+.clubs{padding:36px 0;background:var(--white);border-bottom:1px solid var(--line);overflow:hidden}
+.clubs-in{display:flex;align-items:center;gap:48px}
+.clubs-in>span{flex:none;font-size:13px;color:var(--muted);max-width:150px;line-height:1.4}
+.clubs-mask{flex:1;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)}
+.marquee{display:flex;width:max-content;animation:marq 44s linear infinite}
+.marquee b{display:flex;align-items:center;gap:12px;margin-right:48px;font-size:17px;font-weight:700;letter-spacing:-.02em;color:rgba(10,20,51,.45);white-space:nowrap}
+.marquee b::before{content:"";width:8px;height:8px;border-radius:2px;background:currentColor;opacity:.6}
+@keyframes marq{to{transform:translateX(-50%)}}
+
+/* sections */
+.sec{padding:144px 0}
+.sec-head{max-width:760px;margin-bottom:56px}
+.sec-head h2,.h2{font-size:clamp(36px,4.6vw,60px);line-height:1.02;margin:16px 0}
+.sec-head p,.lead{color:var(--muted);font-size:18px;line-height:28px}
+.reveal{opacity:0;transform:translateY(32px);transition:opacity .8s var(--ease),transform .8s var(--ease);transition-delay:var(--d,0s)}
+.reveal.in{opacity:1;transform:none}
+
+.tagline{padding:176px 0;background:var(--white)}
+.tagline p{font-size:clamp(34px,4.8vw,60px);line-height:1.08;letter-spacing:-.04em;font-weight:600;max-width:1040px;text-wrap:balance}
+.tagline .w{display:inline-block;color:var(--ink);opacity:.18;transform:translateY(8px);transition:opacity .6s var(--ease),transform .6s var(--ease),color .6s}
+.tagline .w.on{opacity:1;transform:none}
+.tagline .w.hl.on{color:var(--cobalt)}
+
+/* horizontal */
+.hs{position:relative;background:var(--paper)}
+.hs-stick{position:sticky;top:0;height:100svh;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding-top:64px}
+.hs-top{width:100%;display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:40px}
+.hs-top h2{font-size:clamp(36px,4.4vw,56px);line-height:1.02;margin-top:16px}
+.hs-prog{display:flex;align-items:center;gap:16px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+.hs-bar{width:160px;height:4px;border-radius:4px;background:var(--line);overflow:hidden}
+.hs-bar i{display:block;height:100%;background:var(--cobalt);transform-origin:left;transform:scaleX(0)}
+.hs-track{display:flex;gap:24px;padding-left:max(24px,calc(50% - 596px));will-change:transform}
+.hcard{flex:none;width:min(520px,82vw);height:min(500px,calc(100svh - 330px));min-height:420px;border-radius:28px;background:var(--white);border:1px solid var(--line);padding:32px;display:flex;flex-direction:column;overflow:hidden;position:relative;transition:transform .6s var(--ease),box-shadow .6s var(--ease)}
+.hcard:hover{transform:translateY(-6px);box-shadow:0 24px 48px -24px rgba(10,20,51,.25)}
+.hcard .num{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.hcard h3{font-size:28px;line-height:1.1;margin:8px 0 8px}
+.hcard p{color:var(--muted);font-size:15px;line-height:24px;max-width:420px}
+.hcard .viz{flex:1;margin:24px -32px -32px;position:relative;overflow:hidden;background:var(--night);border-top:1px solid var(--line)}
+.hcard .viz.light{background:var(--mist)}
+.frames{position:absolute;inset:16px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);gap:8px}
+.frames div{position:relative;border-radius:12px;overflow:hidden;background:var(--night-2)}
+.frames canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+.frames span{position:absolute;left:8px;top:8px;font-family:var(--mono);font-size:10px;color:#fff;background:rgba(0,0,0,.4);padding:2px 6px;border-radius:6px}
+.route{stroke-dasharray:8 8;animation:dash 1.6s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-32}}
+.flash{animation:flash 2.6s steps(1) infinite;animation-delay:var(--dl)}
+@keyframes flash{0%,8%{opacity:1}4%,100%{opacity:0}}
+
+/* pilots */
+.pilots{background:var(--ink);color:#fff;position:relative;overflow:hidden}
+.pilots .sec-head p{color:rgba(255,255,255,.7)}
+.pilots .tag{background:rgba(255,255,255,.1);color:var(--sun)}
+.ap{display:grid;grid-template-columns:1.05fr .95fr;gap:24px;align-items:start}
+.apmap{position:sticky;top:96px;aspect-ratio:1/1.02;border-radius:28px;background:var(--night);border:1px solid rgba(255,255,255,.1);overflow:hidden}
+.apmap svg{position:absolute;inset:0;width:100%;height:100%}
+.apmap .land{fill:#15284e;stroke:rgba(255,255,255,.35);stroke-width:1.2}
+.apmap .st{cursor:pointer;transition:transform .4s var(--ease)}
+.apmap .st circle.c{stroke:#0b1630;stroke-width:2}
+.apmap .st:hover,.apmap .st.on{transform:scale(1.35)}
+.apmap .st .sel{fill:none;stroke:#fff;stroke-width:1.5;opacity:0;transition:opacity .3s}
+.apmap .st.on .sel{opacity:1}
+.apmap .st text{font-family:var(--mono);font-size:9px;fill:rgba(255,255,255,.7);pointer-events:none;transition:opacity .3s}
+.apmap .st text.hide{opacity:0}
+.apmap .st.on text,.apmap .st:hover text{opacity:1;fill:#fff}
+.apmap .lg{position:absolute;left:16px;bottom:16px;display:flex;gap:12px;flex-wrap:wrap;padding:8px 12px;border-radius:12px;background:rgba(0,0,0,.35);font-family:var(--mono);font-size:11px}
+.apmap .lg span{display:flex;align-items:center;gap:6px}
+.apmap .lg i{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.apmap .sample{position:absolute;right:16px;top:16px;font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.55);text-transform:uppercase}
+.apmap .hint{position:absolute;left:16px;top:16px;font-size:13px;color:rgba(255,255,255,.75)}
+.metar{border-radius:28px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:28px;display:flex;flex-direction:column}
+.m-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.m-top b{font-family:var(--mono);font-size:30px;font-weight:500;letter-spacing:-.02em;line-height:1}
+.m-top small{display:block;color:rgba(255,255,255,.65);font-size:14px;margin-top:6px}
+.cat{height:32px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;font-family:var(--mono);font-size:13px;font-weight:500;color:#0b1630;background:var(--c)}
+.m-time{margin:16px 0;font-size:13px;color:rgba(255,255,255,.7);font-family:var(--mono)}
+.stale{display:none;margin-bottom:16px;padding:10px 12px;border-radius:12px;background:rgba(255,159,10,.14);border:1px solid rgba(255,159,10,.45);color:#ffb340;font-size:13px}
+.stale.on{display:block}
+.m-rows{display:grid;gap:0;border-top:1px solid rgba(255,255,255,.1)}
+.m-rows div{display:grid;grid-template-columns:110px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:14px}
+.m-rows span{color:rgba(255,255,255,.55)}
+.raw{margin-top:16px;font-family:var(--mono);font-size:12px;line-height:1.6;padding:12px;border-radius:12px;background:rgba(0,0,0,.28);color:rgba(255,255,255,.88);word-break:break-word}
+.raw small{display:block;font-size:10px;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:4px}
+.src{margin-top:16px;font-size:12px;color:rgba(255,255,255,.55);font-family:var(--mono)}
+.disc{margin-top:auto;padding-top:16px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.55)}
+.p-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:24px}
+.pc{border-radius:24px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);padding:24px;display:flex;flex-direction:column;gap:12px;transition:background .4s,transform .6s var(--ease)}
+.pc:hover{background:rgba(255,255,255,.08);transform:translateY(-4px)}
+.pc h3{font-size:20px;letter-spacing:-.02em}
+.pc p{color:rgba(255,255,255,.68);font-size:14px;line-height:22px}
+.pc .chip{align-self:flex-start}
+.pc .art{height:140px;border-radius:16px;background:var(--night);overflow:hidden;position:relative}
+.pc.wide{grid-column:span 3;display:grid;grid-template-columns:1fr 1.2fr;gap:32px;align-items:center}
+.pc.wide .art{height:300px}
+.chip.us{background:rgba(255,255,255,.1);color:rgba(255,255,255,.75)}
+.chip.us::before{content:none}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.path{font-family:var(--mono);font-size:12px;color:rgba(255,255,255,.55);line-height:1.5}
+.pcards{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;margin-top:24px;border-radius:28px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);padding:48px;overflow:hidden}
+.pcards h3{font-size:clamp(28px,3vw,40px);line-height:1.05;margin:14px 0 8px}
+.pcards .sub2{display:grid;gap:20px;margin-top:28px}
+.pcards .sub2 div{padding-left:16px;border-left:2px solid rgba(255,210,74,.6)}
+.pcards .sub2 b{display:block;font-size:17px;margin-bottom:4px}
+.pcards .sub2 p{color:rgba(255,255,255,.72);font-size:15px;line-height:24px}
+.phones{position:relative;height:600px}
+.phone{position:absolute;width:250px;border-radius:38px;padding:8px;background:#05080f;box-shadow:0 40px 80px -30px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.14);transition:transform .9s var(--ease)}
+.phone img{display:block;width:100%;height:auto;border-radius:30px}
+.phone.a{left:6%;top:10px;z-index:2;transform:translateY(calc(var(--py,0px) * -1)) rotate(-4deg)}
+.phone.b{right:4%;top:46px;transform:translateY(var(--py,0px)) rotate(5deg)}
+.phones:hover .phone.a{transform:translateY(calc(var(--py,0px) * -1)) translateX(-18px) rotate(-6deg)}
+.phones:hover .phone.b{transform:translateY(var(--py,0px)) translateX(18px) rotate(7deg)}
+.p-grid.g4{grid-template-columns:repeat(4,1fr)}
+.pc .art img{width:100%;height:100%;object-fit:cover;object-position:50% 52%;display:block}
+.disc2{margin-top:24px;font-size:13px;line-height:1.6;color:rgba(255,255,255,.55);max-width:760px}
+.trust{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:64px;padding-top:40px;border-top:1px solid rgba(255,255,255,.12)}
+.trust div{font-size:14px;color:rgba(255,255,255,.72);line-height:1.5}
+.trust b{display:block;color:#fff;font-size:15px;margin-bottom:4px}
+.trust svg{width:22px;height:22px;color:var(--sun);margin-bottom:12px}
+
+/* everyday tilt */
+.tilts{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;perspective:1100px}
+.tilt{position:relative;border-radius:28px;background:var(--white);border:1px solid var(--line);padding:24px;transform-style:preserve-3d;transition:transform .7s var(--ease),box-shadow .7s var(--ease);will-change:transform;overflow:hidden}
+.tilt:hover{box-shadow:0 40px 60px -30px rgba(10,20,51,.35)}
+.tilt .art{height:180px;border-radius:20px;background:var(--mist);margin-bottom:20px;position:relative;overflow:hidden;transform:translateZ(30px)}
+.tilt h3{font-size:20px;letter-spacing:-.02em;margin-bottom:6px;transform:translateZ(20px)}
+.tilt p{color:var(--muted);font-size:15px;line-height:24px;transform:translateZ(10px)}
+.tilt .glare{position:absolute;inset:0;border-radius:inherit;background:radial-gradient(500px circle at var(--gx,50%) var(--gy,0%),rgba(255,255,255,.55),transparent 40%);opacity:0;transition:opacity .4s;pointer-events:none;mix-blend-mode:soft-light}
+.tilt:hover .glare{opacity:1}
+
+/* free */
+.free{display:grid;grid-template-columns:1.1fr .9fr;border-radius:32px;overflow:hidden;background:var(--white);border:1px solid var(--line)}
+.free-l{padding:48px}
+.free-l h3{font-size:clamp(40px,4.6vw,64px);line-height:1;letter-spacing:-.045em}
+.free-l ul{list-style:none;display:grid;gap:14px;margin-top:32px;font-size:16px}
+.free-l li{display:flex;gap:12px;align-items:flex-start}
+.free-l li svg{flex:none;width:22px;height:22px;color:var(--cobalt)}
+.free-r{padding:32px;background:var(--ink);color:#fff;display:grid;gap:12px;align-content:center}
+.plat{display:grid;grid-template-columns:44px 1fr auto;gap:16px;align-items:center;padding:16px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);transition:background .3s,transform .5s var(--ease)}
+a.plat:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}
+.plat .pi{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.1);display:grid;place-items:center}
+.plat .pi svg{width:22px;height:22px}
+.plat b{display:block;font-size:16px}
+.plat small{color:rgba(255,255,255,.6);font-size:13px}
+
+/* faq */
+.faq{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.fq{border-radius:20px;background:var(--white);border:1px solid var(--line);transition:border-color .3s,box-shadow .5s var(--ease)}
+.fq.open{border-color:rgba(31,79,216,.35);box-shadow:0 16px 32px -20px rgba(31,79,216,.4)}
+.fq button{width:100%;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:24px;text-align:left;font-size:17px;font-weight:600;letter-spacing:-.01em}
+.fq .pm{flex:none;width:32px;height:32px;border-radius:10px;background:var(--mist);position:relative;transition:background .3s,transform .5s var(--ease)}
+.fq .pm::before,.fq .pm::after{content:"";position:absolute;left:10px;right:10px;top:15px;height:2px;border-radius:2px;background:var(--cobalt);transition:transform .5s var(--ease)}
+.fq .pm::after{transform:rotate(90deg)}
+.fq.open .pm{background:var(--cobalt);transform:rotate(180deg)}
+.fq.open .pm::before,.fq.open .pm::after{background:#fff}
+.fq.open .pm::after{transform:rotate(0)}
+.fq .ans{display:grid;grid-template-rows:0fr;transition:grid-template-rows .6s var(--ease)}
+.fq.open .ans{grid-template-rows:1fr}
+.fq .ans>div{overflow:hidden}
+.fq .ans p{padding:0 24px 24px;color:var(--muted);font-size:15px;line-height:24px}
+
+/* final */
+.final{position:relative;min-height:88svh;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;overflow:hidden;background:var(--cobalt)}
+.final-in{position:relative;z-index:2;padding:96px 24px}
+.final h2{font-size:clamp(44px,6.4vw,96px);line-height:.98;letter-spacing:-.045em;max-width:920px;margin:24px auto;background:linear-gradient(90deg,#fff,#c9d8ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.final p{color:rgba(255,255,255,.88);font-size:18px;max-width:540px;margin:0 auto 40px;text-shadow:0 1px 16px rgba(8,24,90,.45)}
+.final .cta-row{justify-content:center}
+
+footer.site{background:var(--cobalt-d);color:#fff;padding:72px 0 0;overflow:hidden}
+.foot{display:grid;grid-template-columns:1.5fr repeat(3,1fr);gap:32px;font-size:14px}
+.foot h4{font-family:var(--mono);font-weight:400;font-size:12px;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:16px}
+.foot ul{list-style:none;display:grid;gap:10px}
+.foot a{color:rgba(255,255,255,.82);transition:color .3s}
+.foot a:hover{color:var(--sun)}
+.foot .blurb{color:rgba(255,255,255,.7);max-width:300px;margin-top:16px}
+.wordmark{font-size:clamp(72px,16vw,250px);font-weight:700;letter-spacing:-.07em;line-height:.78;margin-top:72px;text-align:center;color:rgba(255,255,255,.08);user-select:none;white-space:nowrap;overflow:hidden;padding-top:.06em}
+.wordmark span{display:inline-block;transform:translateY(30%);transition:transform 1.2s var(--ease),color .6s;transition-delay:calc(var(--i)*.04s)}
+.wordmark.in span{transform:none}
+.wordmark span:hover{color:rgba(255,210,74,.5);transition-delay:0s}
+.legal{display:flex;justify-content:space-between;gap:16px;padding:24px 0;border-top:1px solid rgba(255,255,255,.14);font-size:13px;color:rgba(255,255,255,.6)}
+.legal a:hover{color:#fff}
+
+@media (max-width:980px){
+  .nav-links,.nav .btn{display:none}.menu-btn{display:block}
+  .hero-grid{grid-template-columns:1fr;gap:56px}
+  .fc-hint{display:none}
+  .tilts,.faq,.ap,.p-grid{grid-template-columns:1fr}
+  .pc.wide{grid-column:auto;grid-template-columns:1fr}
+  .pc.wide .art{height:260px}
+  .pcards{grid-template-columns:1fr;padding:28px}
+  .phones{height:560px}
+  .p-grid.g4{grid-template-columns:1fr 1fr}
+  .trust{grid-template-columns:1fr 1fr}
+  .free{grid-template-columns:1fr}
+  .free-l,.free-r{padding:32px}
+  .foot{grid-template-columns:1fr 1fr}
+  .sec{padding:104px 0}.tagline{padding:120px 0}
+  .clubs-in>span{display:none}
+  .apmap{position:relative;top:0}
+}
+@media (max-width:760px){
+  .p-grid.g4{grid-template-columns:1fr}
+  .phones{height:480px}
+  .phone{width:200px}
+  .phone.a{left:0}.phone.b{right:0}
+  .hs{height:auto!important}
+  .hs-stick{position:relative;height:auto;padding:104px 0}
+  .hs-track{flex-direction:column;padding:0 24px;transform:none!important}
+  .hcard{width:100%;height:520px}
+  .hs-prog{display:none}
+  .fc-grid b{font-size:13px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important}
+  .reveal,.fade,.hero h1 span,.wordmark span,.tagline .w{transform:none!important}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="nav">
+  <a class="logo" href="#top" aria-label="Weather Map home"><img src="https://boorussia.github.io/weather-map/icon.svg" alt="">Weather Map</a>
+  <nav class="nav-links" aria-label="Primary">
+    <a href="#different">What's different</a>
+    <a href="#pilots">For pilots</a>
+    <a href="#everyday">Everyday</a>
+    <a href="#free">Free</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+  <a class="btn sun sm" href="https://boorussia.github.io/weather-map/">Open the app</a>
+  <button class="menu-btn" aria-label="Open menu" aria-expanded="false"><i></i><i></i></button>
+</header>
+<div class="mobile-menu" aria-hidden="true">
+  <a href="#different">What's different</a><a href="#pilots">For pilots</a><a href="#everyday">Everyday</a><a href="#free">Free</a><a href="#faq">FAQ</a><a href="https://boorussia.github.io/weather-map/">Open the app</a>
+</div>
+
+<main id="main">
+  <section class="hero" id="top" data-dark>
+    <canvas class="pix" id="pix" aria-hidden="true"></canvas>
+    <canvas class="trail" id="trail" aria-hidden="true"></canvas>
+    <svg class="glider" id="glider" viewBox="0 0 64 40" aria-hidden="true"><path d="M2 20 62 4 26 24z" fill="#fff"/><path d="M26 24 62 4 34 36z" fill="#dbe5ff"/><path d="M26 24 34 36 30 27z" fill="#9fb6f2"/></svg>
+    <div class="wrap hero-grid">
+      <div>
+        <span class="tag light fade"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="5"/></svg>Free · no account · no ads</span>
+        <h1><span>Watch the storm</span><span>before it arrives.</span></h1>
+        <p class="sub fade" style="--d:.2s">Radar that moves like it does on TV, from 24 hours back to 16 hours ahead. Hurricanes, lightning and three forecast models side by side, plus aviation weather for pilots. On the web, iPhone and your TV.</p>
+        <div class="cta-row fade" style="--d:.3s">
+          <a class="btn sun" href="https://boorussia.github.io/weather-map/">Open the web app</a>
+          <a class="link" href="#different">See what's different <span class="arr">↓</span></a>
+        </div>
+        <div class="proof fade" style="--d:.4s">
+          <span class="pl"><span>Web</span><span>iPhone</span><span>Fire TV</span></span>
+          Private by design: nothing to sign up for
+        </div>
+      </div>
+      <div class="fade" style="--d:.35s">
+        <div class="fc" id="fc">
+          <div class="fc-top">
+            <div><b>Radar · Dunnellon, FL</b><small id="clockLbl">Thursday 2:30 PM</small></div>
+            <span class="status" id="status"><i></i><span id="statusTxt">Observed · NOAA MRMS</span></span>
+          </div>
+          <div class="radar" id="radar">
+            <canvas id="rbase" aria-hidden="true"></canvas>
+            <canvas class="rx" id="rx" aria-hidden="true"></canvas>
+            <span class="dot" aria-hidden="true"></span>
+            <span class="stamp" id="rstamp">Now</span>
+            <span class="legend2" aria-hidden="true">Light<b></b>Heavy</span>
+          </div>
+          <div class="fc-grid">
+            <div><small>At your dot</small><b id="vNow">Dry</b></div>
+            <div><small>Next 2 hours</small><b id="vNext">Rain in 24 min</b></div>
+            <div><small>Strongest nearby</small><b id="vMax">52 dBZ</b></div>
+          </div>
+          <div class="slider" id="slider" role="slider" tabindex="0" aria-label="Radar time" aria-valuemin="-1440" aria-valuemax="960" aria-valuenow="0" aria-valuetext="Now">
+            <div class="ticks" id="ticks"></div>
+            <div class="handle" id="handle"><span id="timeLbl">Now</span></div>
+          </div>
+          <div class="fc-axis"><span>−24 h</span><span>−12 h</span><span>Now</span><span>+16 h</span></div>
+          <div class="fc-hint">↑ Drag through 40 hours of radar</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="clubs" aria-label="Data sources">
+    <div class="wrap clubs-in">
+      <span>Built on free public data from</span>
+      <div class="clubs-mask"><div class="marquee">
+        <b>NOAA MRMS radar</b><b>National Weather Service</b><b>National Hurricane Center</b><b>Storm Prediction Center</b><b>aviationweather.gov</b><b>GOES lightning</b><b>ECMWF · GFS · ICON</b><b>NASA GIBS</b><b>Environment Canada</b><b>NOAA SWPC aurora</b>
+        <b>NOAA MRMS radar</b><b>National Weather Service</b><b>National Hurricane Center</b><b>Storm Prediction Center</b><b>aviationweather.gov</b><b>GOES lightning</b><b>ECMWF · GFS · ICON</b><b>NASA GIBS</b><b>Environment Canada</b><b>NOAA SWPC aurora</b>
+      </div></div>
+    </div>
+  </div>
+
+  <section class="tagline">
+    <div class="wrap"><p id="tagline">Every number tells you *where* *it* *came* *from* and *how* *old* *it* *is.* Most weather apps never do.</p></div>
+  </section>
+
+  <section class="hs" id="different">
+    <div class="hs-stick">
+      <div class="wrap hs-top">
+        <div><span class="tag">What sets it apart</span><h2>The parts other apps<br>charge for, or skip.</h2></div>
+        <div class="hs-prog"><span id="hsCount">01 / 04</span><span class="hs-bar"><i id="hsBar"></i></span></div>
+      </div>
+      <div class="hs-track" id="hsTrack">
+        <article class="hcard">
+          <span class="num">01 · Radar</span><h3>Forty hours that glide</h3>
+          <p>From 24 hours back to 16 hours ahead, with motion interpolated playback so storms move instead of jump. New frames about every two minutes, plus single site velocity.</p>
+          <div class="viz"><div class="frames" id="frames"></div></div>
+        </article>
+        <article class="hcard">
+          <span class="num">02 · Storms</span><h3>Storms with receipts</h3>
+          <p>Radar storm tracks flagged for hail and rotation, GOES lightning, SPC storm reports and every NWS warning polygon, all tappable.</p>
+          <div class="viz" id="stormViz"></div>
+        </article>
+        <article class="hcard">
+          <span class="num">03 · Hurricanes</span><h3>The whole hurricane picture</h3>
+          <p>NHC cone, track, warnings, wind field, surge and wind odds, with spaghetti models refreshed every 30 minutes.</p>
+          <div class="viz" id="hurViz"></div>
+        </article>
+        <article class="hcard">
+          <span class="num">04 · Models</span><h3>Three models, one chart</h3>
+          <p>The European, American and German models side by side for 10 days, with the days they disagree on flagged in yellow, so you know when to be careful.</p>
+          <div class="viz light" id="modelViz"></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec pilots dark" id="pilots" data-dark>
+    <div class="wrap">
+      <div class="sec-head reveal"><span class="tag">For pilots</span><h2>Airport weather you can<br>actually check the age of.</h2><p>About 5,200 METAR stations and 3,100 TAFs worldwide, updated every 10 minutes and drawn on the same map as the radar. Tap one for the decoded report, the raw text and the TAF, with Zulu and local times and how old it is.</p><p class="path" style="margin-top:12px">Layers → Weather → Aviation → Airport weather</p></div>
+      <div class="ap">
+        <div class="apmap reveal" id="apmap">
+          <span class="hint">Tap an airport</span>
+          <span class="sample">Sample reports</span>
+          <div class="lg"><span style="--c:var(--vfr)"><i></i>VFR</span><span style="--c:var(--mvfr)"><i></i>MVFR</span><span style="--c:var(--ifr)"><i></i>IFR</span><span style="--c:var(--lifr)"><i></i>LIFR</span></div>
+        </div>
+        <div class="metar reveal" style="--d:.1s" id="metar" aria-live="polite">
+          <div class="m-top"><div><b id="mId">KOCF</b><small id="mName">Ocala International</small></div><span class="cat" id="mCat" style="--c:var(--vfr)">VFR</span></div>
+          <div class="m-time" id="mTime">Observed 1853Z</div>
+          <div class="stale" id="mStale">This report is over 90 minutes old. Check for a newer observation before you rely on it.</div>
+          <div class="m-rows" id="mRows"></div>
+          <div class="raw"><small>Raw METAR</small><span id="mRaw"></span></div>
+          <div class="raw"><small>TAF</small><span id="mTaf"></span></div>
+          <div class="src" id="mSrc">Source: NWS Aviation Weather Center (aviationweather.gov), relayed every 10 min · last relay 6 min ago</div>
+          <p class="disc">For situational awareness only. It supplements, and doesn’t replace, an official preflight briefing: 1800wxbrief.com, or Flight Service at 1-800-WX-BRIEF.</p>
+        </div>
+      </div>
+      <div class="pcards reveal">
+        <div>
+          <div class="chips"><span class="chip live">Live</span><span class="chip us">Worldwide</span></div>
+          <h3>Pilot cards: winds aloft<br>and flyability.</h3>
+          <p class="path">Layers → Weather → Aviation → Pilot cards</p>
+          <div class="sub2">
+            <div><b>Winds aloft card</b><p>Step an hour at a time through 48 hours. A sounding chart to 18,000 ft shows temperature, dew point, the mixed layer, cloudbase and the freezing line, with winds and temperatures at 3,000 to 24,000 ft. Plus cloudbase, thermals to, lapse rate, freezing level, CAPE, lifted index and CIN.</p></div>
+            <div><b>Flyability card</b><p>Pick paraglider, hang glider or drone, and which way your launch faces. The next 12 hours show as green, yellow or red, and tapping an hour lists every reason. Rules of thumb with the reasons shown, never a bare score. You decide.</p></div>
+            <div><b>Drone check</b><p>Wind at 400 ft, cloudbase, visibility and the Kp index for GPS, checked against Part 107's 3 statute miles of visibility and 500 ft below clouds.</p></div>
+          </div>
+        </div>
+        <div class="phones" id="phones">
+          <figure class="phone a"><img src="shots/winds-aloft-card.jpg" alt="Winds aloft card: a sounding chart to 18,000 feet, winds and temperatures by altitude, cloudbase, thermals to and lapse rate" loading="lazy"></figure>
+          <figure class="phone b"><img src="shots/flyability-card.jpg" alt="Flyability card for a paraglider: hourly green, yellow and red columns with wind and gusts, a marginal reason, civil twilight and sunrise" loading="lazy"></figure>
+        </div>
+      </div>
+      <div class="p-grid g4">
+        <article class="pc reveal">
+          <div class="art" id="advArt"></div>
+          <div class="chips"><span class="chip live">Live</span><span class="chip us">US</span></div>
+          <h3>SIGMETs and G-AIRMETs</h3>
+          <p>Icing, turbulence, IFR, mountain obscuration, wind shear and convective areas, colored by hazard. Tap for severity, base and top, and valid times.</p>
+        </article>
+        <article class="pc reveal" style="--d:.06s">
+          <div class="art" id="pirepArt"></div>
+          <div class="chips"><span class="chip live">Live</span><span class="chip us">Mostly US</span></div>
+          <h3>Pilot reports</h3>
+          <p>PIREPs colored by the worse of turbulence and icing, with urgent reports ringed in red. Tap for altitude, aircraft and the report as filed.</p>
+        </article>
+        <article class="pc reveal" style="--d:.12s">
+          <div class="art"><img src="shots/airspace-and-airports-map.jpg" alt="Tampa Class B airspace rings and Class D airports on the map" loading="lazy"></div>
+          <div class="chips"><span class="chip live">Live</span><span class="chip us">US</span></div>
+          <h3>TFRs and airspace</h3>
+          <p>FAA temporary flight restrictions linked to their NOTAM pages, plus Class B, C and D airspace with every shelf's ceiling and floor.</p>
+        </article>
+        <article class="pc reveal" style="--d:.18s">
+          <div class="art" id="offArt"></div>
+          <div class="chips"><span class="chip live">Live</span><span class="chip us">Automatic</span></div>
+          <h3>Offline last briefing</h3>
+          <p>The last good forecast, airport weather, advisories, winds aloft and airspace stay on your device, labelled with when they were saved.</p>
+        </article>
+      </div>
+      <div class="trust reveal">
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><b>Zulu and local</b>Every aviation time is shown both ways, side by side.</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h4l3 7 4-14 3 7h4"/></svg><b>Age on every report</b>Minutes since observation, always visible.</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.5 17.5A2 2 0 0 0 4.2 20.5h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><b>Stale warnings</b>Orange flags past 90 minutes, or when the relay is 30 minutes late.</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2zM8 7h6"/></svg><b>Source on every value</b>You always know which feed said it, and when.</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 8.8a15 15 0 0 1 20 0M5 12.6a10 10 0 0 1 14 0M8.5 16.4a5 5 0 0 1 7 0M12 20h.01"/></svg><b>Works offline</b>Your last briefing stays on the device, dated.</div>
+      </div>
+      <p class="disc2 reveal">For situational awareness only. It supplements, and doesn’t replace, an official preflight briefing: 1800wxbrief.com, or Flight Service at 1-800-WX-BRIEF. Pilot detail is off by default, so the app stays simple for everyone else.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="everyday">
+    <div class="wrap">
+      <div class="sec-head reveal"><span class="tag">Everyday weather</span><h2>Polished enough for the<br>morning commute too.</h2></div>
+      <div class="tilts">
+        <article class="tilt reveal"><div class="art" id="e1"></div><h3>Rain in the next two hours</h3><p>Fifteen minute rain steps tell you when it starts or stops at your location.</p><span class="glare"></span></article>
+        <article class="tilt reveal" style="--d:.06s"><div class="art" id="e2"></div><h3>Weather along your drive</h3><p>Plan a route and see what you will meet, hour by hour, with traffic and DOT cameras.</p><span class="glare"></span></article>
+        <article class="tilt reveal" style="--d:.12s"><div class="art" id="e3"></div><h3>On your TV</h3><p>A weather banner made for the big screen, already running on Fire TV.</p><span class="glare"></span></article>
+        <article class="tilt reveal"><div class="art" id="e4"></div><h3>Share a radar loop</h3><p>Turn any radar loop into a video and send it to the group chat.</p><span class="glare"></span></article>
+        <article class="tilt reveal" style="--d:.06s"><div class="art" id="e5"></div><h3>23 weather maps</h3><p>Wind, gusts, waves, sea temperature, wildfire smoke, air quality, aurora and more.</p><span class="glare"></span></article>
+        <article class="tilt reveal" style="--d:.12s"><div class="art" id="e6"></div><h3>Fires, rivers and tides</h3><p>Wildfire perimeters, river gauges by flood category and NOAA tides, one tap away.</p><span class="glare"></span></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="free" style="padding-top:32px">
+    <div class="wrap">
+      <div class="free reveal">
+        <div class="free-l">
+          <span class="tag">Pricing</span>
+          <h3 style="margin-top:20px">Free.<br>Actually free.</h3>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l5 5L20 7"/></svg>No account to create, nothing to log in to</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l5 5L20 7"/></svg>No ads and no tracking</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l5 5L20 7"/></svg>Built on free public feeds from NOAA, NWS, NHC and partners</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l5 5L20 7"/></svg>Every feature, including the pilot tools</li>
+          </ul>
+          <a class="link" style="color:var(--cobalt);text-shadow:none;margin-top:24px" href="https://boorussia.github.io/weather-map/privacy.html">Read the privacy policy →</a>
+        </div>
+        <div class="free-r">
+          <a class="plat" href="https://boorussia.github.io/weather-map/"><span class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg></span><span><b>Web app</b><small>Any browser. Add it to your home screen.</small></span><span class="chip live">Live</span></a>
+          <div class="plat"><span class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg></span><span><b>iPhone</b><small>Built and in testing.</small></span><span class="chip next">Soon</span></div>
+          <a class="plat" href="https://boorussia.github.io/weather-map/tv.html"><span class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8"/></svg></span><span><b>Fire TV banner</b><small>Weather sized for the big screen.</small></span><span class="chip live">Live</span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="faq" style="padding-top:32px">
+    <div class="wrap">
+      <div class="sec-head reveal"><span class="tag">FAQ</span><h2>Good questions.</h2></div>
+      <div class="faq" id="faqList"></div>
+    </div>
+  </section>
+
+  <section class="final" data-dark>
+    <canvas class="pix" id="pix2" aria-hidden="true"></canvas>
+    <div class="final-in">
+      <span class="tag light reveal">Free on the web today</span>
+      <h2 class="reveal" style="--d:.05s">The whole sky, in one place.</h2>
+      <p class="reveal" style="--d:.1s">Open it in your browser now. On iPhone, tap Share and then Add to Home Screen and it opens like an app.</p>
+      <div class="cta-row reveal" style="--d:.15s"><a class="btn sun" href="https://boorussia.github.io/weather-map/">Open the web app</a></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site" data-dark>
+  <div class="wrap">
+    <div class="foot">
+      <div><a class="logo" href="#top"><img src="https://boorussia.github.io/weather-map/icon.svg" alt="">Weather Map</a><p class="blurb">Radar, storms, hurricanes, forecasts and airport weather. Free and private, on web, iPhone and TV.</p></div>
+      <div><h4>App</h4><ul><li><a href="https://boorussia.github.io/weather-map/">Open the web app</a></li><li><a href="https://boorussia.github.io/weather-map/tv.html">TV banner</a></li></ul></div>
+      <div><h4>Explore</h4><ul><li><a href="#different">What's different</a></li><li><a href="#pilots">For pilots</a></li><li><a href="#faq">FAQ</a></li></ul></div>
+      <div><h4>Legal</h4><ul><li><a href="https://boorussia.github.io/weather-map/privacy.html">Privacy</a></li></ul></div>
+    </div>
+    <div class="wordmark" id="wordmark" aria-hidden="true"></div>
+    <div class="legal"><span>Not an official briefing. Always check official sources before you fly.</span><a href="#top">Back to the sky ↑</a></div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>
+(() => {
+const BRAND = 'Weather Map';
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fine = matchMedia('(pointer: fine)').matches;
+let W = innerWidth, H = innerHeight;
+addEventListener('resize', () => { W = innerWidth; H = innerHeight; });
+const mouse = { x: W * .7, y: H * .45, has: false, vx: 0, vy: 0 };
+addEventListener('pointermove', e => { mouse.vx = e.clientX - mouse.x; mouse.vy = e.clientY - mouse.y; mouse.x = e.clientX; mouse.y = e.clientY; mouse.has = true; }, { passive: true });
+const ticks = [];
+let lenis = null;
+if (!reduce && window.Lenis) lenis = new Lenis({ lerp: .1, wheelMultiplier: 1 });
+function loop(t) { if (lenis) lenis.raf(t); for (const f of ticks) f(t); requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+requestAnimationFrame(() => document.body.classList.add('loaded'));
+
+/* nav */
+const nav = $('#nav'), menuBtn = $('.menu-btn'), darks = $$('[data-dark]');
+ticks.push(() => {
+  let dark = false;
+  for (const d of darks) { const b = d.getBoundingClientRect(); if (b.top <= 40 && b.bottom >= 40) dark = true; }
+  if (nav._d !== dark) { nav._d = dark; nav.classList.toggle('light', !dark); }
+});
+function closeMenu() { document.body.classList.remove('menu-open'); menuBtn.setAttribute('aria-expanded', 'false'); $('.mobile-menu').setAttribute('aria-hidden', 'true'); lenis && lenis.start(); }
+menuBtn.addEventListener('click', () => {
+  const open = !document.body.classList.contains('menu-open');
+  document.body.classList.toggle('menu-open', open); menuBtn.setAttribute('aria-expanded', open); $('.mobile-menu').setAttribute('aria-hidden', !open);
+  $$('.mobile-menu a').forEach((a, i) => a.style.transitionDelay = open ? Math.min(i * 60, 400) + 'ms' : '0ms');
+  open ? lenis && lenis.stop() : lenis && lenis.start();
+});
+$$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
+  const id = a.getAttribute('href'); const el = id.length > 1 ? $(id) : null;
+  if (!el) return; e.preventDefault(); closeMenu();
+  lenis ? lenis.scrollTo(el, { offset: id === '#top' ? 0 : -16, duration: 1.6 }) : el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
+}));
+const navLinks = $$('.nav-links a');
+const spy = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id)); }), { rootMargin: '-45% 0px -50% 0px' });
+['different', 'pilots', 'everyday', 'free', 'faq'].forEach(id => spy.observe($('#' + id)));
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -10% 0px' });
+$$('.reveal, #wordmark').forEach(el => io.observe(el));
+
+/* dithered sky shader */
+function pixelSky(cv, opts) {
+  const gl = cv.getContext('webgl', { antialias: false, alpha: false });
+  if (!gl) { cv.style.background = '#1f4fd8'; return; }
+  const fs = `precision highp float;
+uniform vec2 uRes;uniform float uTime;uniform vec2 uMouse;uniform vec2 uVel;uniform float uScroll;uniform float uSeed;uniform float uBank;
+float hash(vec2 p){p=fract(p*vec2(443.897,441.423));p+=dot(p,p.yx+19.19);return fract((p.x+p.y)*p.x);}
+float noise(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),u.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),u.x),u.y);}
+float fbm(vec2 p){float v=0.,a=.5;mat2 m=mat2(1.6,1.2,-1.2,1.6);for(int i=0;i<6;i++){v+=a*noise(p);p=m*p;a*=.5;}return v;}
+float bayer2(vec2 a){a=floor(a);return fract(a.x/2.+a.y*a.y*.75);}
+float bayer4(vec2 a){return bayer2(.5*a)*.25+bayer2(a);}
+float dens(vec2 p,float y,float x){
+  vec2 q=vec2(fbm(p+vec2(0.,uTime*.012)),fbm(p+vec2(5.2,1.3)));
+  float n=fbm(p+q*1.1);
+  float th=mix(.4,1.02,smoothstep(.02,.56,y))-x*.12+uBank;
+  return smoothstep(th,th+.12,n);
+}
+void main(){
+  vec2 fc=gl_FragCoord.xy;vec2 v=fc/uRes;float asp=uRes.x/uRes.y;
+  vec2 uv=vec2(v.x*asp,v.y);
+  vec2 mo=vec2(uMouse.x*asp,uMouse.y);
+  vec2 dm=uv-mo;float infl=exp(-dot(dm,dm)*10.);
+  float y=v.y-uScroll*.7;
+  vec2 p=uv*vec2(2.,3.2)+vec2(uTime*.02+uSeed,-uScroll*1.6)+(uMouse-.5)*vec2(.22,.1);
+  p-=uVel*infl*.9+normalize(dm+.0001)*infl*.12;
+  float d=dens(p,y,v.x);
+  float du=dens(p+vec2(-.035,.075),y+.02,v.x);
+  float lit=clamp(.45+(d-du)*2.6,0.,1.);
+  float body=fbm(p*2.6+vec2(9.,uTime*.01));
+  float sky=mix(.31,.07,pow(v.y,.8));
+  float c=mix(sky,mix(.47,1.14,clamp(lit*.85+body*.6-.15,0.,1.)),d);
+  float sp=hash(floor(fc)+uSeed);
+  float tw=step(.9972,sp)*step(.35,sin(uTime*2.6+sp*300.))*(1.-d)*smoothstep(.3,.7,v.y);
+  c=max(c,tw);
+  float lev=floor(clamp(c*4.+(bayer4(fc)-.5)*.78,0.,4.));
+  vec3 c0=vec3(.055,.17,.62),c1=vec3(.122,.31,.847),c2=vec3(.36,.545,.94),c3=vec3(.72,.8,.985),c4=vec3(.97,.98,1.);
+  vec3 col=c0;col=mix(col,c1,step(.5,lev));col=mix(col,c2,step(1.5,lev));col=mix(col,c3,step(2.5,lev));col=mix(col,c4,step(3.5,lev));
+  gl_FragColor=vec4(col,1.);
+}`;
+  const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(o)); return o; };
+  const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}')); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(pr); gl.useProgram(pr);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const U = {}; ['uRes', 'uTime', 'uMouse', 'uVel', 'uScroll', 'uSeed', 'uBank'].forEach(n => U[n] = gl.getUniformLocation(pr, n));
+  const px = () => W < 700 ? 2 : 3;
+  const size = () => { cv.width = Math.ceil(cv.clientWidth / px()); cv.height = Math.ceil(cv.clientHeight / px()); gl.viewport(0, 0, cv.width, cv.height); };
+  size(); addEventListener('resize', size);
+  let visible = true; new IntersectionObserver(([e]) => visible = e.isIntersecting).observe(cv);
+  const m = { x: .5, y: .5 }, vel = { x: 0, y: 0 }; const t0 = performance.now();
+  ticks.push(t => {
+    if (!visible) return;
+    const b = cv.getBoundingClientRect();
+    const inside = mouse.y > b.top && mouse.y < b.bottom;
+    if (inside && !reduce) { m.x = lerp(m.x, mouse.x / b.width, .05); m.y = lerp(m.y, 1 - (mouse.y - b.top) / b.height, .05); }
+    vel.x = lerp(vel.x, inside ? clamp(mouse.vx, -40, 40) / 400 : 0, .08); vel.y = lerp(vel.y, inside ? -clamp(mouse.vy, -40, 40) / 400 : 0, .08);
+    mouse.vx *= .85; mouse.vy *= .85;
+    gl.uniform2f(U.uRes, cv.width, cv.height); gl.uniform1f(U.uTime, reduce ? 20 : (t - t0) / 1000);
+    gl.uniform2f(U.uMouse, m.x, m.y); gl.uniform2f(U.uVel, vel.x, vel.y);
+    gl.uniform1f(U.uScroll, opts.scroll(b)); gl.uniform1f(U.uSeed, opts.seed); gl.uniform1f(U.uBank, opts.bank || 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  });
+}
+pixelSky($('#pix'), { seed: 0, scroll: b => clamp(-b.top / b.height, 0, 1) });
+pixelSky($('#pix2'), { seed: 17.3, bank: .06, scroll: b => clamp((H - b.top) / (H + b.height), 0, 1) * .5 - .25 });
+
+/* glider + pixel trail */
+(() => {
+  const hero = $('.hero'), el = $('#glider'), cv = $('#trail'), ctx = cv.getContext('2d');
+  const g = { x: W * .62, y: H * .4, vx: 0, vy: 0, pitch: 0, dir: 1, dirS: 1 }; const pts = [];
+  const size = () => { cv.width = hero.clientWidth; cv.height = hero.clientHeight; };
+  size(); addEventListener('resize', size);
+  let visible = true; new IntersectionObserver(([e]) => visible = e.isIntersecting).observe(hero);
+  ticks.push(t => {
+    if (!visible) return;
+    const top = hero.getBoundingClientRect().top;
+    let tx, ty;
+    if (mouse.has && fine && !reduce) { tx = mouse.x - 56; ty = mouse.y - top + 36; }
+    else { const k = t / 1000 * .3; tx = W * (W < 980 ? .5 : .55) + Math.sin(k) * W * .28; ty = hero.clientHeight * .16 + Math.sin(k * 2) * 50; }
+    g.vx += (tx - g.x) * .010; g.vy += (ty - g.y) * .010; g.vx *= .91; g.vy *= .91; g.x += g.vx; g.y += g.vy;
+    if (g.vx > .8) g.dir = 1; else if (g.vx < -.8) g.dir = -1;
+    g.dirS = lerp(g.dirS, g.dir, .1);
+    const sp = Math.hypot(g.vx, g.vy);
+    const tp = sp > .4 ? clamp(Math.atan2(g.vy, Math.abs(g.vx)), -.7, .7) : 0;
+    g.pitch = lerp(g.pitch, tp, .08);
+    const bob = Math.sin(t / 600) * 3 * (1 - clamp(sp / 4, 0, 1));
+    el.style.transform = `translate(${g.x}px,${g.y + bob}px) scale(${g.dirS},1) rotate(${g.pitch}rad)`;
+    pts.push([g.x - Math.cos(g.pitch) * 26 * g.dir, g.y + bob + 6]); if (pts.length > 70) pts.shift();
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    for (let i = 0; i < pts.length; i += 3) { const a = i / pts.length; ctx.fillStyle = `rgba(255,255,255,${a * .7})`; const s = 3; ctx.fillRect(Math.round(pts[i][0] / s) * s, Math.round(pts[i][1] / s) * s, s, s); }
+  });
+})();
+
+/* ---------- radar model (sample animation, not live data) ---------- */
+const hash2 = (x, y) => { let h = Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967295; };
+const vnoise = (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf); const a = hash2(xi, yi), b = hash2(xi + 1, yi), c = hash2(xi, yi + 1), d = hash2(xi + 1, yi + 1); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; };
+const fbm2 = (x, y) => { let s = 0, a = .5; for (let i = 0; i < 4; i++) { s += a * vnoise(x, y); x = x * 2.03 + 17.1; y = y * 2.03 - 9.7; a *= .5; } return s; };
+const frac = v => v - Math.floor(v);
+const rI = (x, y, t) => {
+  const xb = frac((t + 4.46) * .12) * 2.4 - .6, xp = x + (y - .5) * .42, d = xp - xb;
+  const band = Math.exp(-((d / .085) ** 2)), trail = d < 0 ? Math.exp(d / .28) * .6 : 0;
+  const n1 = fbm2(x * 7 - t * .9, y * 7 + t * .2), n2 = fbm2(x * 3.5 - t * .5 + 40, y * 3.5);
+  return band * (.4 + n1 * 1.3) + trail * (n2 * 1.35 - .2) + Math.max(0, fbm2(x * 4 + 90 - t * .4, y * 4 + t * .1) - .6) * 2.4;
+};
+const LV = [.32, .5, .66, .82, .98, 1.12], DBZ = [20, 30, 40, 45, 50, 60];
+const COL = [[94, 227, 138], [31, 174, 76], [245, 196, 0], [245, 138, 0], [232, 49, 42], [197, 30, 197]];
+const level = I => { let l = -1; for (let k = 0; k < LV.length; k++) if (I >= LV[k]) l = k; return l; };
+function drawRadar(ctx, w, h, t, alpha = 215) {
+  const img = ctx.createImageData(w, h), d = img.data; let max = -1;
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const l = level(rI((i + .5) / w * 1.6, (j + .5) / h, t)), o = (j * w + i) * 4;
+    if (l >= 0) { const c = COL[l]; d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = alpha; if (l > max) max = l; }
+  }
+  ctx.putImageData(img, 0, 0); return max;
+}
+function drawBase(cv, labels = true) {
+  const r = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2), w = Math.max(1, r.width), h = Math.max(1, r.height);
+  cv.width = w * dpr; cv.height = h * dpr; const x = cv.getContext('2d'); x.scale(dpr, dpr);
+  x.fillStyle = '#13284f'; x.fillRect(0, 0, w, h);
+  const coast = y => w * (.86 + Math.sin(y / h * 9) * .025 + Math.sin(y / h * 23) * .01);
+  x.fillStyle = '#081530'; x.beginPath(); x.moveTo(w, 0); for (let y = 0; y <= h; y += 4) x.lineTo(coast(y), y); x.lineTo(w, h); x.fill();
+  x.fillStyle = '#081530'; x.beginPath(); x.moveTo(0, h); for (let xx = 0; xx <= w * .3; xx += 4) x.lineTo(xx, h * (.9 + Math.sin(xx / w * 14) * .03) + (w * .3 - xx) * .0); x.lineTo(w * .3, h); x.fill();
+  x.strokeStyle = 'rgba(255,255,255,.4)'; x.lineWidth = 1.2; x.beginPath(); for (let y = 0; y <= h; y += 4) { const cx = coast(y); y ? x.lineTo(cx, y) : x.moveTo(cx, y); } x.stroke();
+  x.setLineDash([3, 4]); x.strokeStyle = 'rgba(255,255,255,.12)'; x.lineWidth = 1;
+  let s = 3; const rand = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let k = 0; k < 6; k++) { const yy = h * (k + .5) / 6 + (rand() - .5) * 12; x.beginPath(); x.moveTo(0, yy); x.lineTo(coast(yy), yy + (rand() - .5) * 10); x.stroke(); }
+  for (let k = 0; k < 7; k++) { const xx = w * (k + .5) / 8 + (rand() - .5) * 16; x.beginPath(); x.moveTo(xx, 0); x.lineTo(xx + (rand() - .5) * 14, h); x.stroke(); }
+  x.setLineDash([]);
+  x.strokeStyle = 'rgba(255,214,10,.22)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(w * .1, h); x.bezierCurveTo(w * .35, h * .6, w * .45, h * .55, w * .62, 0); x.stroke();
+  if (labels) { x.font = '600 10px Manrope, sans-serif'; x.fillStyle = 'rgba(255,255,255,.6)'; [['Gainesville', .22, .14], ['Ocala', .55, .44], ['Leesburg', .62, .72], ['Daytona Beach', .76, .2]].forEach(([n, a, b]) => x.fillText(n.toUpperCase(), w * a, h * b)); }
+}
+
+/* hero radar card */
+function tickSlider(el, ticksEl, n, opts) {
+  ticksEl.innerHTML = '<i></i>'.repeat(n); const tks = $$('i', ticksEl);
+  if (opts.mark != null) tks[opts.mark].classList.add('now');
+  let val = opts.value, shown = opts.from ?? opts.value, drag = false;
+  const pad = opts.pad;
+  const toVal = x => { const b = el.getBoundingClientRect(); const k = clamp((x - b.left - pad) / (b.width - pad * 2), 0, 1); return opts.min + k * (opts.max - opts.min); };
+  el.addEventListener('pointerdown', e => { drag = true; el.setPointerCapture(e.pointerId); val = toVal(e.clientX); });
+  el.addEventListener('pointermove', e => { if (drag) val = toVal(e.clientX); });
+  const up = () => { if (!drag) return; drag = false; val = Math.round(val / opts.step) * opts.step; };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  el.addEventListener('keydown', e => { const k = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[e.key]; if (k) { e.preventDefault(); val = clamp(Math.round(val / opts.step) * opts.step + k * opts.step * (e.shiftKey ? 6 : 1), opts.min, opts.max); } });
+  let last = -1e9;
+  ticks.push(() => {
+    shown = reduce ? val : lerp(shown, val, drag ? .25 : .1);
+    if (Math.abs(shown - last) < .05) return; last = shown;
+    const k = (shown - opts.min) / (opts.max - opts.min), w = el.clientWidth - pad * 2;
+    opts.place(k * w + pad);
+    const hx = k * (n - 1);
+    tks.forEach((t, i) => { const d = Math.abs(i - hx); t.style.setProperty('--s', (1 + 1.6 * Math.exp(-d * d / 6)).toFixed(3)); t.classList.toggle('hot', d < 3); });
+    el.setAttribute('aria-valuenow', Math.round(shown));
+    opts.update(shown);
+  });
+  return { set: v => val = v };
+}
+(() => {
+  const base = $('#rbase'), rx = $('#rx'), rctx = rx.getContext('2d'), RW = 128, RH = 80;
+  rx.width = RW; rx.height = RH;
+  const redraw = () => drawBase(base); redraw(); addEventListener('resize', redraw); document.fonts && document.fonts.ready.then(redraw);
+  const handle = $('#handle'), lbl = $('#timeLbl'), slider = $('#slider'), st = $('#status'), stT = $('#statusTxt'), stamp = $('#rstamp');
+  const vNow = $('#vNow'), vNext = $('#vNext'), vMax = $('#vMax'), clockLbl = $('#clockLbl');
+  const now = new Date();
+  const fmtRel = m => { if (Math.abs(m) < 5) return 'Now'; const s = m < 0 ? '−' : '+', a = Math.abs(Math.round(m / 10) * 10), h = Math.floor(a / 60), mm = a % 60; return `${s}${h ? h + ' h' : ''}${h && mm ? ' ' : ''}${mm ? mm + ' min' : ''}`; };
+  const fmtClock = m => new Date(now.getTime() + m * 60000).toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit' });
+  const desc = I => { const l = level(I); return l < 0 ? 'Dry' : l < 2 ? 'Light rain' : l < 4 ? 'Heavy rain' : 'Thunderstorm'; };
+  tickSlider(slider, $('#ticks'), 61, {
+    min: -1440, max: 960, step: 10, value: 0, from: -240, pad: 16, mark: 36,
+    place: x => handle.style.transform = `translateX(${x - 16}px)`,
+    update: m => {
+      const t = m / 60;
+      const mx = drawRadar(rctx, RW, RH, t);
+      const rel = fmtRel(m); lbl.textContent = rel; stamp.textContent = rel === 'Now' ? 'Now' : rel; slider.setAttribute('aria-valuetext', rel);
+      clockLbl.textContent = fmtClock(m);
+      const fut = m > 4;
+      const s = fut ? ['Forecast · HRRR', 'var(--sun)'] : ['Observed · NOAA MRMS', 'var(--green)'];
+      if (stT.textContent !== s[0]) { stT.textContent = s[0]; st.style.setProperty('--st', s[1]); }
+      const I0 = rI(.8, .5, t), wet = level(I0) >= 0;
+      vNow.textContent = desc(I0);
+      let nx = wet ? 'Rain all 2 hours' : 'Dry for 2 hours';
+      for (let k = 5; k <= 120; k += 5) { const w2 = level(rI(.8, .5, t + k / 60)) >= 0; if (w2 !== wet) { nx = `${wet ? 'Stops' : 'Rain'} in ${k} min`; break; } }
+      vNext.textContent = nx;
+      vMax.textContent = mx < 0 ? 'No echoes' : `${DBZ[mx]} dBZ${mx >= 5 ? ', hail risk' : ''}`;
+    }
+  });
+})();
+
+/* tagline */
+(() => {
+  const p = $('#tagline');
+  p.innerHTML = p.textContent.split(' ').map(w => { const hl = w.startsWith('*'); return `<span class="w${hl ? ' hl' : ''}">${w.replace(/\*/g, '')}</span>`; }).join(' ');
+  const words = $$('.w', p);
+  ticks.push(() => { const line = H * .65; for (const w of words) { const on = w.getBoundingClientRect().top < line; if (on !== w._on) { w._on = on; w.classList.toggle('on', on); } } });
+})();
+
+/* horizontal: what sets it apart */
+(() => {
+  const hs = $('#different'), track = $('#hsTrack'), bar = $('#hsBar'), count = $('#hsCount');
+  let max = 0, cur = 0;
+  const size = () => {
+    if (W < 760) { hs.style.height = ''; return; }
+    max = Math.max(0, track.scrollWidth - W + Math.max(24, (W - 1192) / 2));
+    hs.style.height = (H + max) + 'px';
+  };
+  size(); addEventListener('resize', size); document.fonts && document.fonts.ready.then(size);
+  ticks.push(() => {
+    if (W < 760) return;
+    const b = hs.getBoundingClientRect(); if (b.bottom < 0 || b.top > H) return;
+    const p = clamp(-b.top / Math.max(1, b.height - H), 0, 1);
+    cur = reduce ? p : lerp(cur, p, .12);
+    track.style.transform = `translate3d(${(-cur * max).toFixed(2)}px,0,0)`;
+    bar.style.transform = `scaleX(${cur})`;
+    count.textContent = `0${Math.min(4, 1 + Math.floor(cur * 4.0001))} / 04`;
+  });
+  /* radar frames */
+  const fr = $('#frames'); const times = [-90, -60, -30, 0];
+  fr.innerHTML = times.map(m => `<div><canvas class="b"></canvas><canvas class="r"></canvas><span>${m ? '−' + Math.abs(m) + ' min' : 'Now'}</span></div>`).join('');
+  const drawFrames = () => $$('div', fr).forEach((d, i) => { drawBase($('canvas.b', d), false); const c = $('canvas.r', d); c.width = 80; c.height = 50; drawRadar(c.getContext('2d'), 80, 50, times[i] / 60 + .3, 230); });
+  new IntersectionObserver(([e], o) => { if (e.isIntersecting) { drawFrames(); o.disconnect(); } }, { rootMargin: '400px' }).observe(fr);
+  /* storms */
+  $('#stormViz').innerHTML = `<svg viewBox="0 0 460 260" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%"><rect width="460" height="260" fill="#13284f"/><path d="M380 0 C 370 80 395 160 372 260 L460 260 L460 0Z" fill="#081530"/><path d="M90 40 L250 30 L300 120 L140 150Z" fill="rgba(255,69,58,.14)" stroke="#ff453a" stroke-width="2"/><text x="100" y="58" font-family="DM Mono" font-size="11" fill="#ff8a80">SEVERE T-STORM WARNING</text><path d="M60 210 L250 110" stroke="rgba(255,255,255,.55)" stroke-width="2" stroke-dasharray="4 6"/><path d="M250 110 L330 70" stroke="#fff" stroke-width="2.5" class="route"/><path d="M322 62 l14 4 -8 12z" fill="#fff"/>${[[100, 190], [150, 163], [200, 137]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="4" fill="rgba(255,255,255,.6)"/>`).join('')}<circle cx="250" cy="110" r="16" fill="#e8312a" stroke="#fff" stroke-width="2"/><circle cx="250" cy="110" r="7" fill="#c51ec5"/><g font-family="DM Mono" font-size="11" fill="#fff"><rect x="268" y="128" width="150" height="54" rx="10" fill="rgba(0,0,0,.5)"/><text x="280" y="148">Hail 1.25 in</text><text x="280" y="168">Rotation · 35 mph</text></g>${[[120, 80, 0], [210, 70, -.8], [300, 160, -1.6], [180, 200, -2.1]].map(([x, y, dl]) => `<path class="flash" style="--dl:${dl}s" d="M${x} ${y} l-8 16 h7 l-5 14 14 -19 h-8 l6 -11z" fill="#ffd60a"/>`).join('')}</svg>`;
+  /* hurricane */
+  const sp = [[-30, '#64d2ff'], [-12, '#ffd60a'], [6, '#ff9f0a'], [20, '#ff453a'], [34, '#bf5af2'], [-44, '#30d158']];
+  $('#hurViz').innerHTML = `<svg viewBox="0 0 460 260" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%"><rect width="460" height="260" fill="#0b2a52"/><path d="M0 40 C 60 50 110 30 150 60 C 175 80 170 130 200 160 C 230 190 220 260 220 260 L0 260Z" fill="#13284f" stroke="rgba(255,255,255,.35)"/><path d="M420 200 C 360 170 320 150 260 110 C 240 96 225 80 215 60 L 240 40 C 260 70 300 100 360 120 C 400 135 430 150 460 160Z" fill="rgba(255,255,255,.16)" stroke="rgba(255,255,255,.5)"/>${sp.map(([o, c]) => `<path d="M440 190 C 380 165 ${320 + o} ${150 + o * .4} ${255 + o * .6} ${100 + o * .8}" fill="none" stroke="${c}" stroke-width="1.6" opacity=".85"/>`).join('')}<path d="M440 190 C 380 165 330 140 262 100" fill="none" stroke="#fff" stroke-width="2.5"/>${[[440, 190], [395, 172], [345, 148], [300, 124], [262, 100]].map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i ? 6 : 8}" fill="#fff" stroke="#0b2a52" stroke-width="2"/>`).join('')}<text x="420" y="214" font-family="DM Mono" font-size="11" fill="#fff">CAT 3</text><path d="M150 60 C 175 80 170 130 200 160" fill="none" stroke="#ff453a" stroke-width="4"/><text x="40" y="100" font-family="DM Mono" font-size="11" fill="#ff8a80">HURRICANE WARNING</text></svg>`;
+  /* models */
+  let s = 9; const rand = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const series = [['ECMWF', '#1f4fd8', 0], ['GFS', '#ff7a3d', 1], ['ICON', '#2fd27a', 2]].map(([n, c, k]) => { const pts = []; for (let d = 0; d <= 20; d++) { const base = 80 - Math.sin(d / 3.2) * 4 - (d > 10 ? (d - 10) * .6 : 0); const spread = d / 20 * (k === 1 ? 7 : k === 2 ? -5 : 1.5); pts.push([d, base + spread + (rand() - .5) * 1.4]); } return [n, c, pts]; });
+  const X = d => 40 + d / 20 * 400, Y = v => 220 - (v - 62) / 26 * 180;
+  $('#modelViz').innerHTML = `<svg viewBox="0 0 470 260" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%">${[65, 75, 85].map(v => `<line x1="40" x2="440" y1="${Y(v)}" y2="${Y(v)}" stroke="rgba(10,20,51,.1)"/><text x="32" y="${Y(v) + 4}" text-anchor="end" font-family="DM Mono" font-size="10" fill="rgba(10,20,51,.55)">${v}°</text>`).join('')}<rect x="${X(12)}" y="30" width="${X(20) - X(12)}" height="200" fill="rgba(255,210,74,.18)" rx="8"/><text x="${X(16)}" y="48" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#8a6a00">MODELS DISAGREE</text>${series.map(([n, c, pts]) => `<path d="${pts.map((p, i) => (i ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1)).join(' ')}" fill="none" stroke="${c}" stroke-width="2.5" stroke-linejoin="round"/>`).join('')}${series.map(([n, c], i) => `<g transform="translate(${50 + i * 90},236)"><rect width="12" height="12" rx="3" fill="${c}"/><text x="18" y="10" font-family="DM Mono" font-size="11" fill="#0a1433">${n}</text></g>`).join('')}<text x="440" y="250" text-anchor="end" font-family="DM Mono" font-size="10" fill="rgba(10,20,51,.55)">10 days</text></svg>`;
+})();
+
+/* ---------- airport weather (sample reports) ---------- */
+(() => {
+  const S = [
+    ['KPNS', 'Pensacola International', -87.19, 30.47, 18, '19009KT 10SM FEW040 27/19 A3004', null],
+    ['KECP', 'Northwest Florida Beaches', -85.80, 30.36, 18, '20008KT 10SM SCT035 28/21 A3003', null],
+    ['KTLH', 'Tallahassee International', -84.35, 30.40, 18, '22006KT 10SM FEW045 29/18 A3002', 'TAF KTLH {D}1720Z {D}18/{N}18 22006KT P6SM FEW045\n  FM{D}2300 VRB03KT P6SM SKC'],
+    ['KCTY', 'Cross City', -83.10, 29.95, 112, '00000KT 3/4SM BR OVC003 23/23 A3001', null],
+    ['KJAX', 'Jacksonville International', -81.69, 30.49, 18, '06012KT 10SM SCT030 BKN060 27/21 A3001', 'TAF KJAX {D}1720Z {D}18/{N}18 06012KT P6SM SCT030 BKN060\n  TEMPO {D}20/{D}23 4SM -SHRA BKN025'],
+    ['KSGJ', 'Northeast Florida Regional', -81.34, 29.96, 18, '07014G22KT 6SM -RA BKN025 OVC045 25/22 A3000', null],
+    ['KGNV', 'Gainesville Regional', -82.27, 29.69, 18, '07008KT 10SM SCT040 29/20 A3002', 'TAF KGNV {D}1720Z {D}18/{N}18 07008KT P6SM SCT040\n  FM{D}2200 06005KT P6SM BKN050'],
+    ['KOCF', 'Ocala International', -82.22, 29.17, 18, '08009KT 10SM SCT035 BKN250 27/21 A3002', 'TAF KOCF {D}1720Z {D}18/{N}18 08009KT P6SM SCT035 BKN250\n  TEMPO {D}21/{D}23 5SM -TSRA BKN030CB\n  FM{N}0200 VRB03KT P6SM FEW050'],
+    ['KLEE', 'Leesburg International', -81.81, 28.82, 18, '09010KT 10SM BKN050 28/21 A3001', null],
+    ['KDAB', 'Daytona Beach International', -81.06, 29.18, 18, '08016G24KT 3SM TSRA BKN018CB OVC040 24/22 A2999', 'TAF KDAB {D}1720Z {D}18/{N}18 08016G24KT 3SM TSRA BKN018CB\n  FM{D}2100 08010KT P6SM VCSH BKN035'],
+    ['KSFB', 'Orlando Sanford International', -81.24, 28.78, 18, '09013KT 7SM -TSRA SCT020CB BKN045 26/22 A3000', null],
+    ['KMCO', 'Orlando International', -81.31, 28.43, 18, '10011KT 10SM SCT030 BKN100 29/21 A3000', 'TAF KMCO {D}1720Z {D}18/{N}24 10011KT P6SM SCT030 BKN100\n  TEMPO {D}20/{D}23 3SM TSRA BKN025CB'],
+    ['KMLB', 'Melbourne Orlando International', -80.65, 28.10, 18, '11018G30KT 1 1/2SM +TSRA BKN008CB OVC025 23/22 A2998', 'TAF KMLB {D}1720Z {D}18/{N}18 11018G30KT 1 1/2SM +TSRA BKN008CB\n  FM{D}2000 10012KT P6SM VCTS BKN030CB'],
+    ['KVRB', 'Vero Beach Regional', -80.42, 27.66, 18, '12012KT 5SM -RA BKN022 OVC040 25/23 A2999', null],
+    ['KBKV', 'Brooksville Tampa Bay Regional', -82.47, 28.47, 18, '07007KT 10SM FEW035 28/20 A3002', null],
+    ['KTPA', 'Tampa International', -82.53, 27.98, 18, '26008KT 10SM FEW030 SCT250 30/22 A3001', 'TAF KTPA {D}1720Z {D}18/{N}24 26008KT P6SM FEW030 SCT250\n  FM{D}2300 08005KT P6SM FEW040'],
+    ['KLAL', 'Lakeland Linder International', -82.02, 27.99, 18, '09006KT 10SM SCT040 30/21 A3001', null],
+    ['KSRQ', 'Sarasota Bradenton International', -82.55, 27.40, 18, '27009KT 10SM FEW035 29/23 A3001', null],
+    ['KRSW', 'Southwest Florida International', -81.76, 26.54, 18, '25007KT 10SM SCT045 30/23 A3000', null],
+    ['KAPF', 'Naples', -81.78, 26.15, 18, '27008KT 10SM FEW040 29/24 A3000', null],
+    ['KPBI', 'Palm Beach International', -80.10, 26.68, 18, '10014KT 10SM SCT025 BKN040 28/23 A2999', null],
+    ['KFLL', 'Fort Lauderdale Hollywood International', -80.15, 26.07, 18, '11012KT 10SM SCT028 28/24 A2999', null],
+    ['KMIA', 'Miami International', -80.29, 25.79, 18, '11013KT 10SM FEW025 SCT045 29/24 A2999', 'TAF KMIA {D}1720Z {D}18/{N}24 11013KT P6SM FEW025 SCT045'],
+    ['KEYW', 'Key West International', -81.76, 24.56, 18, '10011KT 10SM FEW020 29/25 A3000', null]
+  ];
+  const FL = [[-87.6, 31.0], [-85.0, 31.0], [-84.9, 30.7], [-82.2, 30.57], [-81.45, 30.7], [-81.3, 29.9], [-81.0, 29.2], [-80.6, 28.6], [-80.4, 27.6], [-80.05, 26.7], [-80.1, 26.0], [-80.2, 25.6], [-80.4, 25.2], [-80.9, 25.15], [-81.2, 25.6], [-81.8, 26.1], [-82.1, 26.6], [-82.6, 27.4], [-82.8, 27.9], [-82.7, 28.6], [-82.8, 29.0], [-83.2, 29.3], [-83.7, 29.9], [-84.3, 30.0], [-85.0, 29.6], [-85.4, 29.8], [-85.7, 30.1], [-86.5, 30.4], [-87.2, 30.3], [-87.5, 30.3]];
+  const PX = lon => 30 + (lon + 87.8) * 52 * .883, PY = lat => 30 + (31.2 - lat) * 52;
+  const CAT = { VFR: 'var(--vfr)', MVFR: 'var(--mvfr)', IFR: 'var(--ifr)', LIFR: 'var(--lifr)' };
+  const parseVis = m => { const r = m.match(/(?:^|\s)(\d+\s\d\/\d|\d\/\d|\d+)SM/); if (!r) return 10; const p = r[1].trim().split(' '); return p.reduce((a, q) => a + (q.includes('/') ? q.split('/')[0] / q.split('/')[1] : +q), 0); };
+  const decode = body => {
+    const o = {}; const w = body.match(/(\d{3}|VRB)(\d{2})(?:G(\d{2}))?KT/);
+    o.wind = w ? (w[2] === '00' && w[1] === '000' ? 'Calm' : `${w[1] === 'VRB' ? 'Variable' : w[1] + '°'} at ${+w[2]} kt${w[3] ? ', gusts ' + +w[3] : ''}`) : 'Not reported';
+    o.vis = parseVis(body);
+    const cl = [...body.matchAll(/(FEW|SCT|BKN|OVC|VV)(\d{3})(CB|TCU)?/g)].map(m => ({ c: m[1], h: +m[2] * 100, x: m[3] || '' }));
+    const ceil = cl.find(c => ['BKN', 'OVC', 'VV'].includes(c.c));
+    o.ceil = ceil ? ceil.h : null; o.ceilTxt = ceil ? `${ceil.h.toLocaleString('en-US')} ft ${{ BKN: 'broken', OVC: 'overcast', VV: 'vertical visibility' }[ceil.c]}${ceil.x ? ' (' + ceil.x + ')' : ''}` : 'None';
+    o.clouds = cl.length ? cl.map(c => `${c.c} ${c.h.toLocaleString('en-US')}${c.x ? ' ' + c.x : ''}`).join(' · ') : 'Clear';
+    const tp = body.match(/(M?\d{2})\/(M?\d{2})/); if (tp) { const t = +tp[1].replace('M', '-'), d = +tp[2].replace('M', '-'), f = c => Math.round(c * 9 / 5 + 32); o.temp = `${t}°C / ${d}°C (${f(t)}°F / ${f(d)}°F)`; }
+    const al = body.match(/A(\d{4})/); if (al) { const v = +al[1] / 100; o.alt = `${v.toFixed(2)} inHg (${Math.round(v * 33.8639)} hPa)`; }
+    const WX = { '+': 'Heavy ', '-': 'Light ', TS: 'thunderstorm', RA: 'rain', SH: 'showers', BR: 'mist', FG: 'fog', HZ: 'haze', VC: 'in the vicinity' };
+    const wx = body.split(' ').filter(t => /^(\+|-|VC)?(TS|SH)?(RA|BR|FG|HZ|DZ)?$/.test(t) && /[A-Z]{2}/.test(t) && !/KT|SM/.test(t));
+    o.wx = wx.length ? wx.map(t => { let s = ''; let r = t; if (r[0] === '+' || r[0] === '-') { s += WX[r[0]]; r = r.slice(1); } const parts = r.match(/.{2}/g) || []; const words = parts.map(p => WX[p] || p); return (s + words.join(', ')).trim().replace(/^./, c => c.toUpperCase()); }).join(' · ') : 'None';
+    const v = o.vis, c = o.ceil ?? 99999;
+    o.cat = (c < 500 || v < 1) ? 'LIFR' : (c < 1000 || v < 3) ? 'IFR' : (c <= 3000 || v <= 5) ? 'MVFR' : 'VFR';
+    o.visTxt = v >= 10 ? '10+ statute miles' : `${body.match(/(?:^|\s)(\d+\s\d\/\d|\d\/\d|\d+)SM/)[1]} statute mile${v === 1 ? '' : 's'}`;
+    return o;
+  };
+  const now = Date.now();
+  const z = ms => { const d = new Date(ms); return { dd: String(d.getUTCDate()).padStart(2, '0'), hhmm: String(d.getUTCHours()).padStart(2, '0') + String(d.getUTCMinutes()).padStart(2, '0'), hh: String(d.getUTCHours()).padStart(2, '0') }; };
+  const data = S.map(([id, name, lon, lat, age, body, taf]) => {
+    const obs = now - age * 60000, zt = z(obs), tomorrow = z(now + 864e5);
+    const o = decode(body); return { id, name, lon, lat, age, body, obs, raw: `${id} ${zt.dd}${zt.hhmm}Z ${body}`, taf: taf ? taf.replaceAll('{D}', z(now).dd).replaceAll('{N}', tomorrow.dd) : null, ...o };
+  });
+  let svg = `<svg viewBox="14 26 400 390" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Map of Florida airports colored by flight category"><rect x="0" y="0" width="470" height="430" fill="#0b1630"/><path class="land" d="${FL.map((p, i) => (i ? 'L' : 'M') + PX(p[0]).toFixed(1) + ' ' + PY(p[1]).toFixed(1)).join(' ')}Z"/>`;
+  [[-80.6, 25.0], [-80.9, 24.8], [-81.3, 24.68], [-81.7, 24.57]].forEach(([lo, la]) => svg += `<circle cx="${PX(lo)}" cy="${PY(la)}" r="3" fill="#15284e" stroke="rgba(255,255,255,.35)"/>`);
+  const placed = []; data.forEach(d => { const x = PX(d.lon), y = PY(d.lat); const hitDot = data.some(o => o !== d && PX(o.lon) > x + 4 && PX(o.lon) < x + 46 && Math.abs(PY(o.lat) - y) < 10); d.lab = !hitDot && !placed.some(([a, b]) => Math.abs(a - x) < 36 && Math.abs(b - y) < 13); if (d.lab) placed.push([x, y]); });
+  data.forEach((d, i) => { const x = PX(d.lon), y = PY(d.lat); svg += `<g class="st" data-i="${i}" tabindex="0" role="button" aria-label="${d.id} ${d.name}, ${d.cat}" style="transform-origin:${x}px ${y}px"><circle class="sel" cx="${x}" cy="${y}" r="11"/><circle class="c" cx="${x}" cy="${y}" r="6.5" fill="${CAT[d.cat]}"/><text x="${x + 10}" y="${y + 3}"${d.lab ? '' : ' class="hide"'}>${d.id}</text></g>`; });
+  svg += '</svg>';
+  $('#apmap').insertAdjacentHTML('afterbegin', svg);
+  const els = $$('#apmap .st');
+  const fmtAge = m => m < 60 ? `${m} min ago` : `${Math.floor(m / 60)} h ${m % 60} min ago`;
+  const show = i => {
+    const d = data[i]; els.forEach((e, k) => e.classList.toggle('on', k === i));
+    $('#mId').textContent = d.id; $('#mName').textContent = d.name;
+    const c = $('#mCat'); c.textContent = d.cat; c.style.setProperty('--c', CAT[d.cat]);
+    const lt = new Date(d.obs).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    $('#mTime').textContent = `Observed ${z(d.obs).hhmm}Z · ${lt} local · ${fmtAge(d.age)}`;
+    $('#mStale').classList.toggle('on', d.age > 90);
+    $('#mRows').innerHTML = [['Wind', d.wind], ['Visibility', d.visTxt], ['Ceiling', d.ceilTxt], ['Clouds', d.clouds], ['Weather', d.wx], ['Temp / dew', d.temp], ['Altimeter', d.alt]].map(([k, v]) => `<div><span>${k}</span>${v}</div>`).join('');
+    $('#mRaw').textContent = d.raw;
+    $('#mTaf').innerHTML = d.taf ? d.taf.replace(/\n/g, '<br>') : 'No TAF is issued for this airport.';
+  };
+  els.forEach((e, i) => { e.addEventListener('click', () => show(i)); e.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); show(i); } }); if (fine) e.addEventListener('pointerenter', () => show(i)); });
+  show(data.findIndex(d => d.id === 'KOCF'));
+})();
+
+/* pilot feature art */
+(() => {
+  $('#advArt').innerHTML = `<svg viewBox="0 0 300 140" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%"><rect width="300" height="140" fill="#0b1630"/><path d="M20 18 L130 12 L150 70 L44 88Z" fill="rgba(100,210,255,.14)" stroke="#64d2ff" stroke-dasharray="5 4"/><text x="50" y="36" font-family="DM Mono" font-size="9" fill="#64d2ff">ICING</text><path d="M140 30 L250 20 L262 74 L168 82Z" fill="rgba(255,159,10,.14)" stroke="#ff9f0a" stroke-dasharray="5 4"/><text x="176" y="46" font-family="DM Mono" font-size="9" fill="#ffb340">TURB HIGH</text><path d="M40 96 L120 92 L128 128 L50 132Z" fill="rgba(191,90,242,.16)" stroke="#bf5af2" stroke-dasharray="5 4"/><text x="52" y="114" font-family="DM Mono" font-size="9" fill="#d69bff">IFR</text><path d="M180 92 L280 86 L284 130 L196 134Z" fill="rgba(255,69,58,.16)" stroke="#ff453a"/><text x="192" y="114" font-family="DM Mono" font-size="9" fill="#ff8a80">CONVECTIVE</text></svg>`;
+  const pr = [[40, 40, '#fff'], [90, 70, '#ffd60a'], [150, 36, '#ff9f0a'], [210, 96, '#fff'], [250, 52, '#ffd60a'], [120, 110, '#ff453a'], [60, 104, '#fff'], [190, 30, '#fff']];
+  $('#pirepArt').innerHTML = `<svg viewBox="0 0 300 140" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%"><rect width="300" height="140" fill="#0b1630"/>${pr.map(([x, y, c]) => `<circle cx="${x}" cy="${y}" r="5" fill="${c}" stroke="#0b1630" stroke-width="1.5"/>`).join('')}<circle cx="120" cy="110" r="10" fill="none" stroke="#ff453a" stroke-width="2"/><g transform="translate(128,62)"><rect width="128" height="42" rx="8" fill="rgba(0,0,0,.55)"/><text x="10" y="17" font-family="DM Mono" font-size="9" fill="rgba(255,255,255,.6)">UUA · 7,000 FT · B738</text><text x="10" y="32" font-family="DM Mono" font-size="10" fill="#ff8a80">SEV TURB</text></g></svg>`;
+  $('#offArt').innerHTML = `<svg viewBox="0 0 300 140" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%"><rect width="300" height="140" fill="#0b1630"/><g transform="translate(20,22)" fill="none" stroke="#ffd60a" stroke-width="2" stroke-linecap="round"><path d="M0 9a15 15 0 0 1 20 0M4 14a9 9 0 0 1 12 0M10 20h.01"/><path d="M-2 -2 22 24"/></g><text x="54" y="36" font-family="Manrope" font-weight="700" font-size="12" fill="#fff">Offline</text><foreignObject x="20" y="50" width="260" height="80"><div xmlns="http://www.w3.org/1999/xhtml" style="font:12px/1.45 Manrope,sans-serif;color:rgba(255,255,255,.75)">Showing the forecast saved Thu 3:09 PM. Times and ages on each report still apply.</div></foreignObject></svg>`;
+  const ph = $('#phones');
+  if (ph && !reduce) ticks.push(() => { const b = ph.getBoundingClientRect(); if (b.bottom < 0 || b.top > H) return; const k = clamp((H - b.top) / (H + b.height), 0, 1) - .5; ph.style.setProperty('--py', (k * 60).toFixed(1) + 'px'); });
+})();
+
+/* everyday art */
+(() => {
+  const bars = [0, 0, .1, .3, .7, 1, .8, .4];
+  $('#e1').innerHTML = `<svg viewBox="0 0 300 180" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%">${bars.map((b, i) => `<rect x="${22 + i * 33}" y="${130 - b * 90}" width="24" height="${4 + b * 90}" rx="6" fill="${b > .6 ? '#1f4fd8' : '#5c8bf0'}" opacity="${.35 + b * .65}"/><text x="${34 + i * 33}" y="152" text-anchor="middle" font-family="DM Mono" font-size="9" fill="rgba(10,20,51,.55)">${i * 15}</text>`).join('')}<text x="22" y="26" font-family="Manrope" font-weight="700" font-size="14" fill="#0a1433">Rain starts in 40 min</text><text x="22" y="170" font-family="DM Mono" font-size="9" fill="rgba(10,20,51,.55)">MINUTES FROM NOW</text></svg>`;
+  $('#e2').innerHTML = `<svg viewBox="0 0 300 180" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%"><path class="route" d="M30 150 C 90 140 110 60 170 70 S 250 40 275 30" fill="none" stroke="#1f4fd8" stroke-width="3"/>${[[30, 150, '82°', '#ffd60a'], [120, 92, '79°', '#5c8bf0'], [190, 66, '74°', '#1f4fd8'], [275, 30, '71°', '#5c8bf0']].map(([x, y, t, c]) => `<circle cx="${x}" cy="${y}" r="7" fill="#fff" stroke="${c}" stroke-width="3"/><text x="${x + 12}" y="${y + 4}" font-family="DM Mono" font-size="11" fill="#0a1433">${t}</text>`).join('')}<rect x="150" y="110" width="120" height="50" rx="10" fill="#0a1433"/><text x="162" y="131" font-family="DM Mono" font-size="9" fill="rgba(255,255,255,.6)">I-75 · 3:40 PM</text><text x="162" y="149" font-family="Manrope" font-weight="700" font-size="12" fill="#fff">Heavy rain ahead</text></svg>`;
+  $('#e3').innerHTML = `<svg viewBox="0 0 300 180" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%"><rect x="30" y="20" width="240" height="130" rx="8" fill="#0a1433"/><rect x="40" y="30" width="220" height="110" rx="4" fill="#13284f"/><rect x="40" y="108" width="220" height="32" fill="rgba(0,0,0,.5)"/>${['Thu', 'Fri', 'Sat', 'Sun', 'Mon'].map((d, i) => `<text x="${58 + i * 44}" y="122" font-family="DM Mono" font-size="8" fill="rgba(255,255,255,.6)">${d}</text><text x="${58 + i * 44}" y="134" font-family="Manrope" font-weight="700" font-size="10" fill="#fff">${[80, 82, 84, 77, 76][i]}°</text>`).join('')}<path d="M120 160 h60" stroke="#0a1433" stroke-width="6" stroke-linecap="round"/></svg>`;
+  $('#e4').innerHTML = `<svg viewBox="0 0 300 180" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%"><rect x="70" y="24" width="160" height="110" rx="14" fill="#13284f"/><circle cx="150" cy="79" r="26" fill="rgba(255,255,255,.18)"/><path d="M142 66 l22 13 -22 13z" fill="#fff"/><rect x="86" y="146" width="128" height="8" rx="4" fill="rgba(10,20,51,.1)"/><rect x="86" y="146" width="70" height="8" rx="4" fill="#1f4fd8"/></svg>`;
+  $('#e5').innerHTML = `<svg viewBox="0 0 300 180" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%">${[['Aurora', '#30d158', 0], ['Smoke', '#a1887f', 1], ['Waves', '#64d2ff', 2], ['Wind', '#5c8bf0', 3]].map(([n, c, i]) => `<g transform="translate(${60 + i * 14},${110 - i * 22}) skewX(-18)"><rect width="150" height="56" rx="10" fill="${c}" opacity=".9" stroke="#fff" stroke-width="2"/></g><text x="${226 + i * 14 - 6}" y="${144 - i * 22}" font-family="DM Mono" font-size="10" fill="#0a1433">${n}</text>`).join('')}</svg>`;
+  $('#e6').innerHTML = `<svg viewBox="0 0 300 180" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%"><path d="M40 120 C 80 80 140 150 190 110 S 260 90 280 100" fill="none" stroke="#5c8bf0" stroke-width="10" stroke-linecap="round" opacity=".5"/><path d="M60 40 C 90 30 120 50 110 75 C 100 95 70 90 60 70Z" fill="rgba(255,122,61,.3)" stroke="#ff7a3d" stroke-width="2"/><text x="58" y="104" font-family="DM Mono" font-size="9" fill="#c2511d">FIRE PERIMETER</text><rect x="196" y="74" width="16" height="16" rx="4" fill="#ffd60a" stroke="#0a1433" stroke-width="2"/><text x="190" y="64" font-family="DM Mono" font-size="9" fill="#0a1433">GAUGE · ACTION</text><text x="190" y="150" font-family="DM Mono" font-size="9" fill="rgba(10,20,51,.55)">HIGH TIDE 6:12 PM</text></svg>`;
+  if (!fine || reduce) return;
+  $$('.tilt').forEach(c => {
+    c.addEventListener('pointermove', e => { const b = c.getBoundingClientRect(), x = (e.clientX - b.left) / b.width, y = (e.clientY - b.top) / b.height; c.style.transition = 'transform .2s var(--ease), box-shadow .7s var(--ease)'; c.style.transform = `rotateY(${(x - .5) * 12}deg) rotateX(${(.5 - y) * 10}deg) translateZ(0)`; c.style.setProperty('--gx', x * 100 + '%'); c.style.setProperty('--gy', y * 100 + '%'); });
+    c.addEventListener('pointerleave', () => { c.style.transition = ''; c.style.transform = ''; });
+  });
+})();
+
+/* faq */
+(() => {
+  const F = [
+    ['Is it really free?', 'Yes. It is built on free public data from NOAA, the National Weather Service, the National Hurricane Center, the FAA and other agencies. There is no account, no ads and no tracking.'],
+    ['Where does the radar come from?', 'Live radar is the NOAA MRMS composite, with new frames about every two minutes. The past 24 hours come from the Iowa Environmental Mesonet archive and the next 16 hours from the HRRR model. Single site NEXRAD velocity is there too.'],
+    ['Can I use it to plan a flight?', 'For situational awareness only. It supplements, and doesn’t replace, an official preflight briefing: 1800wxbrief.com, or Flight Service at 1-800-WX-BRIEF.'],
+    ['How fresh is the aviation data?', 'METARs, TAFs, SIGMETs, G-AIRMETs, pilot reports and TFRs are relayed every 10 minutes, and the relay can run a few minutes late. Every report shows its Zulu and local time and its age, with an orange warning past 90 minutes or when the relay is 30 minutes late. Airspace is copied daily.'],
+    ['What does the aviation layer cover?', 'METARs and TAFs worldwide, about 5,200 stations and 3,100 TAFs. SIGMETs, G-AIRMETs, TFRs and Class B, C and D airspace are US only, and pilot reports are mostly US. NOTAMs are not included, but every TFR links to its NOTAM page at tfr.faa.gov.'],
+    ['Is the flyability check a go or no go?', 'No. It uses rules of thumb with the reasons shown, like wind too light or too strong, gusty, or blowing across or behind the launch. They are not limits for your wing, aircraft or skill. You decide.'],
+    ['Does it work outside the US?', 'Forecasts, weather maps, satellite, aurora, model comparison, winds aloft, flyability and airport weather work worldwide. Radar, alerts, outlooks, hurricanes, advisories, TFRs and airspace focus on the US.'],
+    ['Is there an iPhone app?', 'It is built and in testing. Until it reaches the App Store, open the web app in Safari, tap Share, then Add to Home Screen.'],
+    ['Can I put it on my TV?', 'Yes. There is a weather banner page made for TV screens, already running on Fire TV.'],
+    ['Which units does it support?', 'Fahrenheit or Celsius, and mph, km/h or knots. Aviation views always use knots, feet, statute miles and inHg, with °C or °F and hPa alongside.']
+  ];
+  const list = $('#faqList');
+  list.innerHTML = F.map(([q, a], i) => `<div class="fq reveal" style="--d:${(i % 2) * .06}s"><button aria-expanded="false" aria-controls="fa${i}" id="fq${i}">${q}<span class="pm" aria-hidden="true"></span></button><div class="ans" id="fa${i}" role="region" aria-labelledby="fq${i}"><div><p>${a}</p></div></div></div>`).join('');
+  $$('.fq', list).forEach(el => io.observe(el));
+  list.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; const it = b.parentElement, open = !it.classList.contains('open'); it.classList.toggle('open', open); b.setAttribute('aria-expanded', open); });
+})();
+
+$('#wordmark').innerHTML = BRAND.toLowerCase().split('').map((c, i) => `<span style="--i:${i}">${c === ' ' ? '&nbsp;' : c}</span>`).join('');
+})();
+</script>
+</body>
+</html>
