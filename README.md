@@ -1,6 +1,6 @@
-# Weather Map — landing page
+# Wethr — landing page
 
-The marketing site for Weather Map (https://boorussia.github.io/weather-map/): smooth radar from 24 hours back to 16 hours ahead, hurricanes, lightning, model comparison, and aviation weather for pilots. Free and private, on web, iPhone and TV.
+The marketing site for Wethr (https://boorussia.github.io/weather-map/): smooth radar from 24 hours back to 16 hours ahead, hurricanes, lightning, model comparison, and aviation weather for pilots. Free and private, on web, iPhone and TV.
 
 Live at https://boorussia.github.io/weather-map-site/
 
